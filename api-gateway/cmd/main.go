@@ -17,7 +17,6 @@ func main() {
 	rdb := redis.Client(cfg.REDIS_HOST, cfg.REDIS_PORT)
 
 	app := fiber.New()
-	app.Use(middleware.RequestID())
 
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{cfg.FRONTEND_URL},
@@ -25,6 +24,8 @@ func main() {
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
 		AllowCredentials: true,
 	}))
+
+	app.Use(middleware.RequestID())
 
 	app.Use(middleware.IpLimit(rdb))
 
