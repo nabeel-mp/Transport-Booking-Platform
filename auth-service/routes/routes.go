@@ -14,4 +14,5 @@ func Register(app *fiber.App, cfg *config.Config, rdb *redis.Client) {
 	auth.Post("/verify-otp", handlers.VerifyOtp(rdb))
 	auth.Post("/resend-otp", handlers.ResendOtp(cfg, rdb))
 	auth.Post("/login", handlers.Login(cfg))
+	auth.Post("/logout", handlers.Logout())
 }

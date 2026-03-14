@@ -194,3 +194,18 @@ func Login(cfg *config.Config) fiber.Handler {
 
 	}
 }
+
+func Logout() fiber.Handler {
+	return func(c fiber.Ctx) error {
+		c.Cookie(&fiber.Cookie{
+			Name:     "access_token",
+			Value:    "",
+			HTTPOnly: true,
+			Secure:   false, //true in prod
+			SameSite: "None",
+			Path:     "/",
+			MaxAge:   -1,
+		})
+		return c.Status(200).JSON(fiber.Map{"message": "logout successful"})
+	}
+}
