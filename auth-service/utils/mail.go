@@ -11,7 +11,7 @@ func SendEmail(cfg *config.Config, to, subject, body string) error {
 	client := resend.NewClient(cfg.RESEND_API_KEY)
 
 	params := &resend.SendEmailRequest{
-		From:    "Tripneo <onboarding@resend.dev>",
+		From:    "Tripneo <noreply@mail.tripneo.in>",
 		To:      []string{to},
 		Subject: subject,
 		Html:    body,
