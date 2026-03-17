@@ -27,6 +27,8 @@ func main() {
 
 	app.Use(middleware.RequestID())
 
+	app.Use(middleware.PrometheusHTTP())
+
 	app.Use(middleware.IpLimit(rdb))
 
 	routes.Register(app, cfg, rdb)
