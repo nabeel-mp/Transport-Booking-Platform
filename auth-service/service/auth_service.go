@@ -13,12 +13,12 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func CreateUser(ctx context.Context, cfg *config.Config, rdb *redis.Client, email, password string) error {
+func CreateUser(ctx context.Context, cfg *config.Config, rdb *redis.Client, name, email, password string) error {
 	hashedPass, err := utils.GenerateHashedPassword(password)
 	if err != nil {
 		return errors.New("internal server error")
 	}
-	err = repository.InsertUser(email, hashedPass)
+	err = repository.InsertUser(name, email, hashedPass)
 	if err != nil {
 		if errors.Is(err, domainerrors.EmailAlreadyTaken) {
 			return domainerrors.EmailAlreadyTaken

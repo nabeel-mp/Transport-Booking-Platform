@@ -18,8 +18,9 @@ var Validate = validator.New()
 func Register(rdb *redis.Client, cfg *config.Config) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		var req struct {
+			Name     string `json:"name" validate:"required"`
 			Email    string `json:"email" validate:"required,email"`
-			Password string `json:"password" validate:"required,min=4"`
+			Password string `json:"password" validate:"required,min=6"`
 		}
 
 		if err := c.Bind().Body(&req); err != nil {
@@ -35,7 +36,7 @@ func Register(rdb *redis.Client, cfg *config.Config) fiber.Handler {
 			})
 		}
 
-		err := service.CreateUser(c.RequestCtx(), cfg, rdb, req.Email, req.Password)
+		err := service.CreateUser(c.RequestCtx(), cfg, rdb, req.Name, req.Email, req.Password)
 		if err != nil {
 			if errors.Is(err, domainerrors.EmailAlreadyTaken) {
 				return c.Status(http.StatusConflict).JSON(fiber.Map{
@@ -144,7 +145,7 @@ func Login(cfg *config.Config) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		var req struct {
 			Email    string `json:"email" validate:"required,email"`
-			Password string `json:"password" validate:"required,min=4"`
+			Password string `json:"password" validate:"required,min=6"`
 		}
 
 		if err := c.Bind().Body(&req); err != nil {

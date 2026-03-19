@@ -12,9 +12,10 @@ import (
 	"gorm.io/gorm"
 )
 
-func InsertUser(email, hashedPassword string) error {
+func InsertUser(name, email, hashedPassword string) error {
 
 	user := &models.User{
+		Name:         name,
 		Email:        email,
 		PasswordHash: hashedPassword,
 		CreatedAt:    time.Now(),
