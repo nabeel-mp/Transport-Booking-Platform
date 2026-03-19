@@ -11,22 +11,16 @@ import (
 )
 
 func main() {
-	// 1. Load config from .env
 	cfg := config.LoadConfig()
 
-	// 2. Connect to PostgreSQL
 	db.ConnectPostgres(cfg)
 
-	// 3. Connect to Redis
 	rdb := redis.Client(cfg.REDIS_HOST, cfg.REDIS_PORT)
 
-	// 4. Kafka producer — initialized in Phase 6
 	// kafka.InitProducer(cfg)
 
-	// 5. gRPC server — started in Phase 5
 	// go grpc.StartServer(cfg)
 
-	// 6. Create Fiber app
 	app := fiber.New(fiber.Config{
 		AppName: "TripNEO Train Service v1.0",
 	})
