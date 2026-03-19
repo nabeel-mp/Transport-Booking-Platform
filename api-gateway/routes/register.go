@@ -19,6 +19,7 @@ func Register(app *fiber.App, cfg *config.Config, rdb *redis.Client) {
 
 	RegisterFlightRoutes(app, cfg, rdb)
 	RegisterTrainRoutes(app, cfg, rdb)
+	RegisterBusRoutes(app, cfg, rdb)
 
 	app.Get("/metrics", promhttp.Handler())
 
@@ -41,5 +42,4 @@ func Register(app *fiber.App, cfg *config.Config, rdb *redis.Client) {
 		middleware.RateLimit(rdb),
 		proxy.To(cfg.AUTH_SERVICE_URL),
 	)
-
 }
