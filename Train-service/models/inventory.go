@@ -7,8 +7,7 @@ import (
 )
 
 // TrainInventory represents one pre-purchased confirmed berth
-// for a specific TrainSchedule. Tripneo buys these from the
-// provider and resells to users.
+// for a specific TrainSchedule.
 type TrainInventory struct {
 	ID              uuid.UUID     `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 	TrainScheduleID uuid.UUID     `gorm:"type:uuid;not null;index"`
