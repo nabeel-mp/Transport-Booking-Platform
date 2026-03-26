@@ -48,13 +48,15 @@ func SearchTrains(origin, destination, class string, date time.Time) ([]SearchRe
 			ts.status,
 			? AS class,
 			`+availCol+` AS available_seats,
-			COALESCE(
-				AVG(ti.price) FILTER (WHERE ti.class = ? AND ti.status = 'AVAILABLE'),
-				0
+			(
+				SELECT AVG(price) 
+				FROM train_inventory 
+				WHERE train_schedule_id = ts.id 
+				  AND class = ? 
+				  AND status = 'AVAILABLE'
 			) AS price
 		FROM train_schedules ts
 		JOIN trains t ON t.id = ts.train_id
-		LEFT JOIN train_inventory ti ON ti.train_schedule_id = ts.id
 		WHERE
 			t.origin_station      = ?
 			AND t.destination_station = ?
@@ -62,7 +64,6 @@ func SearchTrains(origin, destination, class string, date time.Time) ([]SearchRe
 			AND ts.status         != 'CANCELLED'
 			AND t.is_active       = true
 			AND `+availCol+`      > 0
-		GROUP BY ts.id, t.id
 		ORDER BY ts.departure_at ASC
 	`,
 		class, class,
@@ -80,7 +81,14 @@ func SearchTrains(origin, destination, class string, date time.Time) ([]SearchRe
 // GetScheduleByID fetches a single schedule with its parent Train preloaded.
 func GetScheduleByID(scheduleID string) (*models.TrainSchedule, error) {
 	var schedule models.TrainSchedule
-	err := db.DB.Preload("Train").First(&schedule, "id = ?", scheduleID).Error
+	err := db.DB.
+		Preload("Train").
+		Preload("Train.Stops", func(db *gorm.DB) *gorm.DB {
+			return db.Order("stop_sequence ASC") // Ensure stops are in order
+		}).
+		Preload("Train.Stops.Station").
+		First(&schedule, "id = ?", scheduleID).Error
+
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, domainerrors.ErrScheduleNotFound
