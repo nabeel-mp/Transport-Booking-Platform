@@ -28,15 +28,12 @@ func CreateBookingSeats(tx *gorm.DB, seats []models.BookingSeat) error {
 func GetBookingByID(bookingID string) (*models.TrainBooking, error) {
 	var booking models.TrainBooking
 	err := db.DB.
-		Preload("TrainSchedule.Train.Stops.Station"). // Preload full route info
-		Preload("FromStation").                       // Boarding station info
-		Preload("ToStation").                         // Destination station info
+		Preload("TrainSchedule.Train.Stops.Station"). // Deep preload
+		Preload("FromStation").
+		Preload("ToStation").
 		First(&booking, "id = ?", bookingID).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, domainerrors.ErrBookingNotFound
-		}
-		return nil, fmt.Errorf("db error: %w", err)
+		return nil, err
 	}
 	return &booking, nil
 }

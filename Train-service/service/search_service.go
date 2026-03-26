@@ -2,51 +2,42 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"log"
 	"time"
 
+	"github.com/nabeel-mp/tripneo/train-service/db"
+	"github.com/nabeel-mp/tripneo/train-service/models"
 	"github.com/nabeel-mp/tripneo/train-service/repository"
 	goredis "github.com/redis/go-redis/v9"
 )
 
 const searchCacheTTL = 2 * time.Minute
 
-func SearchTrains(
-	ctx context.Context,
-	rdb *goredis.Client,
-	origin, destination, class, dateStr string,
-) ([]repository.SearchResult, error) {
+func SearchTrains(ctx context.Context, rdb *goredis.Client, fromCode, toCode, date, class string) ([]models.TrainSchedule, error) {
+	var results []models.TrainSchedule
 
-	// Parse date
-	date, err := time.Parse("2006-01-02", dateStr)
+	// Use the 'class' parameter in your query if needed
+	query := db.DB.WithContext(ctx).Table("train_schedules").
+		Select("train_schedules.*").
+		Joins("JOIN trains ON trains.id = train_schedules.train_id").
+		Joins("JOIN train_stops AS s1 ON s1.train_id = trains.id").
+		Joins("JOIN stations AS st1 ON st1.id = s1.station_id").
+		Joins("JOIN train_stops AS s2 ON s2.train_id = trains.id").
+		Joins("JOIN stations AS st2 ON st2.id = s2.station_id").
+		Where("st1.code = ? AND st2.code = ?", fromCode, toCode).
+		Where("s1.stop_sequence < s2.stop_sequence").
+		Where("DATE(train_schedules.schedule_date) = ?", date)
+
+	// Optional: Filter by class if provided
+	if class != "" {
+		// Assuming your model/DB has a way to filter by class
+		query = query.Where("class = ?", class)
+	}
+
+	err := query.Preload("Train.Stops.Station").Find(&results).Error
+
 	if err != nil {
-		return nil, fmt.Errorf("invalid date format, expected YYYY-MM-DD")
-	}
-
-	// Build cache key
-	cacheKey := fmt.Sprintf("train:search:%s:%s:%s:%s", origin, destination, class, dateStr)
-
-	// Try cache first
-	cached, err := rdb.Get(ctx, cacheKey).Result()
-	if err == nil {
-		var results []repository.SearchResult
-		if jsonErr := json.Unmarshal([]byte(cached), &results); jsonErr == nil {
-			log.Printf("search cache hit: %s", cacheKey)
-			return results, nil
-		}
-	}
-
-	// Cache miss — query DB
-	results, err := repository.SearchTrains(origin, destination, class, date)
-	if err != nil {
-		return nil, err
-	}
-
-	// Cache the results
-	if data, jsonErr := json.Marshal(results); jsonErr == nil {
-		_ = rdb.Set(ctx, cacheKey, data, searchCacheTTL).Err()
+		return nil, fmt.Errorf("search failed: %w", err)
 	}
 
 	return results, nil

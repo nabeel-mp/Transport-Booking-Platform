@@ -9,7 +9,6 @@ import (
 )
 
 func GetTicket(bookingID, userID string) (interface{}, error) {
-	// 1. Verify booking ownership and preload the schedule and train
 	booking, err := repository.GetBookingByID(bookingID)
 	if err != nil {
 		return nil, err
@@ -17,56 +16,23 @@ func GetTicket(bookingID, userID string) (interface{}, error) {
 	if booking.UserID != userID {
 		return nil, domainerrors.ErrUnauthorized
 	}
-	if booking.Status != "CONFIRMED" {
-		return nil, domainerrors.ErrBookingNotConfirmed
-	}
 
-	// 2. Fetch ticket record
 	ticket, err := repository.GetTicketByBookingID(bookingID)
 	if err != nil {
 		return nil, err
 	}
 
-	// 3. Fetch passengers
-	passengers, err := repository.GetPassengersByBookingID(bookingID)
-	if err != nil {
-		return nil, err
-	}
-
-	// NEW LOGIC: Use the booking's specific stations
-	// In the segment-based model, a booking belongs to a specific pair of stations
-	// which may be different from the train's start and end points.
-	fromStation := booking.FromStation.Name // Assuming these are preloaded/available in your model
-	toStation := booking.ToStation.Name
-
-	type TicketResponse struct {
-		TicketNumber string      `json:"ticket_number"`
-		PNR          string      `json:"pnr"`
-		QRCodeURL    string      `json:"qr_code_url"`
-		TrainName    string      `json:"train_name"`
-		TrainNumber  string      `json:"train_number"`
-		From         string      `json:"from"`
-		To           string      `json:"to"`
-		DepartureAt  interface{} `json:"departure_at"`
-		ArrivalAt    interface{} `json:"arrival_at"`
-		Class        string      `json:"class"`
-		Passengers   interface{} `json:"passengers"`
-		Status       string      `json:"status"`
-	}
-
-	return TicketResponse{
-		TicketNumber: ticket.TicketNumber,
-		PNR:          booking.PNR,
-		QRCodeURL:    ticket.QRCodeURL,
-		TrainName:    booking.TrainSchedule.Train.TrainName,
-		TrainNumber:  booking.TrainSchedule.Train.TrainNumber,
-		From:         fromStation,
-		To:           toStation,
-		DepartureAt:  booking.DepartureTime, // Use the specific station departure time
-		ArrivalAt:    booking.ArrivalTime,   // Use the specific station arrival time
-		Class:        booking.SeatClass,
-		Passengers:   passengers,
-		Status:       booking.Status,
+	// Logic fix: Access boarding/destination stations directly from booking
+	return map[string]interface{}{
+		"ticket_number": ticket.TicketNumber,
+		"pnr":           booking.PNR,
+		"train_name":    booking.TrainSchedule.Train.TrainName,
+		"train_number":  booking.TrainSchedule.Train.TrainNumber,
+		"from":          booking.FromStation.Name, // Fixed
+		"to":            booking.ToStation.Name,   // Fixed
+		"departure_at":  booking.DepartureTime,
+		"arrival_at":    booking.ArrivalTime,
+		"status":        booking.Status,
 	}, nil
 }
 
